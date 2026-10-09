@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "link"
+version = "0.1.0"
+description = "Carries Triad-42 review output into CNS, with CCC holding the record."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "William N. King" }]
+# Each dependency is pinned to an exact commit so every install gets the same code.
+dependencies = [
+    "cognitive-continuity-constitution @ git+https://github.com/wking53214/CCC@96cfc9c5908d68df6fa56907b09ca26363c57087",
+    "triad42 @ git+https://github.com/wking53214/Triad-42.git@e5791c811f48a948504fd7d5aadbd89445c2076d",
+    "cns @ git+https://github.com/wking53214/CNS.git@d4bb328a7f4d1aa2d562f4d3544ceeaa5dd5d542",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+include = ["link*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
