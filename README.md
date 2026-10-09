@@ -44,8 +44,7 @@ would need a packaging change to run elsewhere.
 
 - CCC: main, `96cfc9c`
 - Triad-42: main, `e5791c8`
-- CNS: `d4bb328`, the head of the admission-driver branch. Update this pin
-  once that branch merges.
+- CNS: main, `da9ab8c`, which includes the retry loop (CNS PR #12).
 
 ## Tests
 
