@@ -49,7 +49,7 @@ def test_running_again_admits_without_recording_twice():
     assert len(system.store.artifacts) == 1
 
 
-def test_held_candidates_do_not_trigger_a_second_handoff(monkeypatch):
+def test_held_candidates_are_not_recorded_again(monkeypatch):
     session = _session("finding")
     system = CCCSystem()
     admit_session(session, system)
@@ -64,7 +64,20 @@ def test_held_candidates_do_not_trigger_a_second_handoff(monkeypatch):
 
     admit_session(session, system)
 
-    assert calls == []
+    assert len(calls) == 1
+    assert len(system.store.artifacts) == 1
+
+
+def test_an_unharvested_pass_is_refused_even_when_every_candidate_is_held():
+    session = _session("finding")
+    system = CCCSystem()
+    admit_session(session, system)
+    session.start_pass(LabeledItem("Started, never harvested.", Label.ASSUMPTION))
+
+    with pytest.raises(ValueError, match="never harvested"):
+        admit_session(session, system)
+
+    assert len(system.store.artifacts) == 1
 
 
 def test_an_erased_candidate_is_refused_and_not_brought_back():

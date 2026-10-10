@@ -51,9 +51,16 @@ def admit_session(session, ccc_system, guard=None):
         TriadOutput(candidate_id=candidate.candidate_id, text=candidate.text)
         for candidate in session.candidates.all()
     ]
+
+    def handoff():
+        hand_off(session, ccc_system)
+
+    # Hand off first, even when every candidate is already held, so an
+    # unharvested pass is refused on every run. hand_off is idempotent.
+    handoff()
     return admit_candidates(
         candidates,
-        hand_off=lambda: hand_off(session, ccc_system),
+        hand_off=handoff,
         lookup=MachineRecords(ccc_system),
         guard=guard if guard is not None else ResubmissionGuard(),
     )
