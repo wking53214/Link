@@ -14,8 +14,12 @@ does, so the rules for each library stay with that library.
 
 ## What it does
 
-`admit_session` takes a Triad-42 session and a real CCC system. For each
-candidate, in order:
+`admit_session` takes a Triad-42 session and a real CCC system. It considers
+only the candidates the review surfaced. Triad also records the candidates it
+did not show, with the reason, so that withholding one is never silent; every
+one of those is still recorded in CCC as an audit trail, but none is offered to
+CNS, because the review never presented it. A status that is not exactly
+SURFACED is treated the same way. For each surfaced candidate, in order:
 
 1. If CCC does not hold the candidate yet, link hands the session to CCC to
    record it, then checks again.

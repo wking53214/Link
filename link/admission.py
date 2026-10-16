@@ -16,6 +16,7 @@ from __future__ import annotations
 from ccc import CCCSystem
 from ccc.record_status import MachineRecords
 from triad42.ccc_handoff import hand_off
+from triad42.retrieval import SurfacingStatus
 
 from cns_composition.ccc_admission import TriadOutput
 from cns_composition.resubmission import ResubmissionGuard
@@ -30,6 +31,12 @@ def admit_session(session, ccc_system, guard=None):
     Each candidate is recorded in CCC if it is not there yet, then checked
     against CCC's record. Returns the admitted items in session order.
 
+    Only candidates the review surfaced are admitted. Triad records a
+    candidate it did not show, with the reason, so that not showing it is never
+    silent; that record is an audit trail and stays in CCC, but it is not review
+    output and it is not offered to CNS. Anything whose status is not exactly
+    SURFACED is left out, including a status this code has not seen.
+
     Raises UnrecordedTriadOutput when an item is refused for good, for example
     because a human erased it in CCC or the retry cap was reached. Raises
     ValueError when the session has passes that were never harvested, because
@@ -43,6 +50,7 @@ def admit_session(session, ccc_system, guard=None):
     candidates = [
         TriadOutput(candidate_id=candidate.candidate_id, text=candidate.text)
         for candidate in session.candidates.all()
+        if candidate.status is SurfacingStatus.SURFACED
     ]
 
     def handoff():

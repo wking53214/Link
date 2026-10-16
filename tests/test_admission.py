@@ -12,6 +12,7 @@ from cns.gate import GateOutcome
 from cns_composition.ccc_admission import GATE_NAME as CCC_GATE
 from cns_composition.ccc_admission import UnrecordedTriadOutput
 from triad42 import Label, LabeledItem, Session, Severity
+from triad42.retrieval import SurfacingStatus
 
 from link import admission
 from link.admission import admit_session
@@ -116,3 +117,74 @@ def test_a_target_that_is_not_a_real_ccc_system_is_refused():
 
     with pytest.raises(TypeError, match="ccc.CCCSystem"):
         admit_session(session, object())
+
+
+def _session_with_hidden(shown: str, hidden: str) -> Session:
+    """A harvested pass in which `shown` surfaces and `hidden` is detected but not shown to the reviewer."""
+    session = Session()
+    rp = session.start_pass(LabeledItem("The plan as written.", Label.ASSUMPTION))
+    shown_id = rp.add_finding(shown, Severity.HIGH, scope="plan").finding_id
+    rp.add_finding(hidden, Severity.HIGH, scope="plan")
+    session.harvest(rp, surfaced_ids={shown_id})
+    return session
+
+
+def test_the_fixture_really_contains_a_hidden_candidate():
+    session = _session_with_hidden("shown finding", "hidden finding")
+    status = {c.text: c.status for c in session.candidates.all()}
+    assert status == {"shown finding": SurfacingStatus.SURFACED, "hidden finding": SurfacingStatus.NOT_SURFACED}
+
+
+def test_a_candidate_the_reviewer_was_not_shown_is_not_admitted():
+    """Triad records a hidden candidate, with its reason, so that not showing it is never silent. That record
+    is an audit trail of what was withheld, not output to use. Admitting it would put into CNS something the
+    review never presented."""
+    session = _session_with_hidden("shown finding", "hidden finding")
+
+    admitted = admit_session(session, CCCSystem())
+
+    assert [a.text for a in admitted] == ["shown finding"]
+
+
+def test_a_hidden_candidate_is_still_recorded_in_ccc_for_the_audit_trail():
+    session = _session_with_hidden("shown finding", "hidden finding")
+    system = CCCSystem()
+
+    admit_session(session, system)
+
+    assert len(system.store.artifacts) == 2
+
+
+def test_a_session_with_nothing_surfaced_admits_nothing_and_does_not_fail():
+    session = Session()
+    rp = session.start_pass(LabeledItem("The plan as written.", Label.ASSUMPTION))
+    rp.add_finding("hidden one", Severity.HIGH, scope="plan")
+    rp.add_finding("hidden two", Severity.HIGH, scope="plan")
+    session.harvest(rp, surfaced_ids=set())
+
+    assert admit_session(session, CCCSystem()) == []
+
+
+def test_admitted_candidates_keep_session_order_around_a_hidden_one():
+    session = Session()
+    rp = session.start_pass(LabeledItem("The plan as written.", Label.ASSUMPTION))
+    first = rp.add_finding("first", Severity.HIGH, scope="plan").finding_id
+    rp.add_finding("hidden between", Severity.HIGH, scope="plan")
+    third = rp.add_finding("third", Severity.HIGH, scope="plan").finding_id
+    session.harvest(rp, surfaced_ids={first, third})
+
+    assert [a.text for a in admit_session(session, CCCSystem())] == ["first", "third"]
+
+
+def test_a_status_that_is_not_exactly_surfaced_is_never_admitted():
+    """Only SURFACED is permission. A status Triad adds later, which this code has not seen, is not."""
+    from enum import Enum
+
+    class FutureStatus(Enum):
+        SOMETHING_NEW = "SOMETHING_NEW"
+
+    session = _session("finding")
+    for candidate in session.candidates.all():
+        candidate.status = FutureStatus.SOMETHING_NEW
+
+    assert admit_session(session, CCCSystem()) == []
