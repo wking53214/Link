@@ -1,0 +1,19 @@
+name: tests
+on:
+  push:
+  pull_request:
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      # A normal, non-editable install of the pinned packages. cns_composition
+      # must come from the installed cns wheel, which is what this checks.
+      - run: pip install ".[dev]"
+      - run: pytest -q

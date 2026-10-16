@@ -17,16 +17,9 @@ from ccc import CCCSystem
 from ccc.record_status import MachineRecords
 from triad42.ccc_handoff import hand_off
 
-try:
-    from cns_composition.ccc_admission import TriadOutput
-    from cns_composition.resubmission import ResubmissionGuard
-    from cns_composition.triad_admission import admit_candidates
-except ImportError as exc:
-    raise ImportError(
-        "link needs the cns_composition folder from a CNS checkout at the pinned "
-        "commit on the Python path. It is not part of the cns package by design. "
-        "See the README."
-    ) from exc
+from cns_composition.ccc_admission import TriadOutput
+from cns_composition.resubmission import ResubmissionGuard
+from cns_composition.triad_admission import admit_candidates
 
 __all__ = ["admit_session"]
 
