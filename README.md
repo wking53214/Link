@@ -41,7 +41,7 @@ required a CNS checkout on the Python path; that is no longer so.
 
 - CCC: main, `96cfc9c`
 - Triad-42: main, `e5791c8`
-- CNS: `e638e08`, the commit that ships `cns_composition` in the wheel. It sits on a branch, not on CNS main yet; re-pin to a CNS tag once one carries it.
+- CNS: tag `v1.9.0`, which ships `cns_composition` in the wheel.
 
 ## Tests
 
