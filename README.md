@@ -39,7 +39,7 @@ required a CNS checkout on the Python path; that is no longer so.
 
 ## Pinned commits
 
-- CCC: main, `96cfc9c`
+- CCC: main, `3ac6deb`
 - Triad-42: main, `e5791c8`
 - CNS: tag `v1.9.0`, which ships `cns_composition` in the wheel.
 
