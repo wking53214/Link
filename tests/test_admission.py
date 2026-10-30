@@ -260,3 +260,20 @@ def test_without_a_key_the_same_forgery_is_admitted():
     _plant_forgery(system, session)
 
     assert [a.text for a in admit_session(session, system)] == ["only finding"]
+
+
+def test_erased_text_from_a_new_session_under_a_new_id_is_refused_too():
+    """CCC-002: erasure follows the text, so a later review that produces the same words cannot bring them back."""
+    first = _session("withdrawn finding")
+    system = CCCSystem()
+    admitted = admit_session(first, system)
+    system.erase(first.handed_off[admitted[0].candidate_id], actor=Actor.human(),
+                 reason="withdrawn by the reviewer", authorization_basis="test")
+
+    second = _session("withdrawn finding")
+    assert [c.candidate_id for c in second.candidates.all()] != [c.candidate_id for c in first.candidates.all()]
+    with pytest.raises(UnrecordedTriadOutput) as info:
+        admit_session(second, system)
+
+    assert info.value.result.outcome is GateOutcome.TERMINAL_BREACH
+    assert "erased" in info.value.result.reason
