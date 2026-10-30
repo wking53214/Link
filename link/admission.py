@@ -25,7 +25,7 @@ from cns_composition.triad_admission import admit_candidates
 __all__ = ["admit_session"]
 
 
-def admit_session(session, ccc_system, guard=None):
+def admit_session(session, ccc_system, guard=None, *, attestation_key=None):
     """Admit every candidate in a Triad-42 session for use inside CNS.
 
     Each candidate is recorded in CCC if it is not there yet, then checked
@@ -41,6 +41,12 @@ def admit_session(session, ccc_system, guard=None):
     because a human erased it in CCC or the retry cap was reached. Raises
     ValueError when the session has passes that were never harvested, because
     their output would be missing from CCC.
+
+    With `attestation_key` (bytes, at least 16, supplied by the caller), the
+    handoff stamps each record and CCC's lookup counts only stamped ones, so a
+    record anyone else wrote in the Triad's name is never admitted. A session
+    that already has an unstamped record in `ccc_system` is refused with
+    ValueError. Without a key the answer is as unauthenticated as before.
     """
     if not isinstance(ccc_system, CCCSystem):
         raise TypeError(
@@ -54,7 +60,10 @@ def admit_session(session, ccc_system, guard=None):
     ]
 
     def handoff():
-        hand_off(session, ccc_system)
+        if attestation_key is None:
+            hand_off(session, ccc_system)
+        else:
+            hand_off(session, ccc_system, attestation_key=attestation_key)
 
     # Hand off first, even when every candidate is already held, so an
     # unharvested pass is refused on every run. hand_off is idempotent.
@@ -62,6 +71,6 @@ def admit_session(session, ccc_system, guard=None):
     return admit_candidates(
         candidates,
         hand_off=handoff,
-        lookup=MachineRecords(ccc_system),
+        lookup=MachineRecords(ccc_system, attestation_key=attestation_key),
         guard=guard if guard is not None else ResubmissionGuard(),
     )

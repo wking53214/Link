@@ -188,3 +188,75 @@ def test_a_status_that_is_not_exactly_surfaced_is_never_admitted():
         candidate.status = FutureStatus.SOMETHING_NEW
 
     assert admit_session(session, CCCSystem()) == []
+
+
+# ------------------------------------------------------------ a key: only the handoff's own records count
+
+KEY = b"k" * 32
+
+
+def _plant_forgery(system: CCCSystem, session: Session, *, in_this_session: bool = False) -> None:
+    """A record written in the Triad's name, for a candidate the session really has, by anything but the handoff."""
+    (candidate,) = session.candidates.all()
+    metadata = {"source": "triad42", "candidate_id": candidate.candidate_id}
+    if in_this_session:
+        metadata["session_id"] = session.session_id
+    system.ingest(candidate.text, actor=Actor.model("triad42"), metadata=metadata)
+
+
+def test_with_a_key_the_handoff_stamps_and_the_session_is_admitted():
+    session = _session("only finding")
+    system = CCCSystem()
+
+    admitted = admit_session(session, system, attestation_key=KEY)
+
+    assert [a.text for a in admitted] == ["only finding"]
+    (artifact,) = system.store.artifacts.values()
+    assert isinstance(artifact.metadata.get("attestation"), str)
+
+
+def test_with_a_key_running_again_admits_without_recording_twice():
+    session = _session("only finding")
+    system = CCCSystem()
+    admit_session(session, system, attestation_key=KEY)
+
+    assert len(admit_session(session, system, attestation_key=KEY)) == 1
+    assert len(system.store.artifacts) == 1
+
+
+def test_with_a_key_a_forged_record_beside_the_session_never_counts_the_handoffs_own_stamped_one_does():
+    session = _session("only finding")
+    system = CCCSystem()
+    _plant_forgery(system, session)
+
+    assert [a.text for a in admit_session(session, system, attestation_key=KEY)] == ["only finding"]
+    stamped = [a for a in system.store.artifacts.values() if "attestation" in a.metadata]
+    assert len(system.store.artifacts) == 2 and len(stamped) == 1
+
+
+def test_with_a_key_a_forged_record_claiming_this_session_is_refused_and_nothing_is_recorded():
+    session = _session("only finding")
+    system = CCCSystem()
+    _plant_forgery(system, session, in_this_session=True)
+
+    with pytest.raises(ValueError, match="no valid attestation"):
+        admit_session(session, system, attestation_key=KEY)
+    assert len(system.store.artifacts) == 1  # only the forgery: nothing was recorded or admitted on top of it
+
+
+def test_with_a_key_a_session_handed_off_earlier_without_one_is_refused():
+    session = _session("only finding")
+    system = CCCSystem()
+    admit_session(session, system)
+
+    with pytest.raises(ValueError, match="no valid attestation"):
+        admit_session(session, system, attestation_key=KEY)
+
+
+def test_without_a_key_the_same_forgery_is_admitted():
+    """A recorded gap, stated as an assertion: with no key a record planted in the Triad's name is held."""
+    session = _session("only finding")
+    system = CCCSystem()
+    _plant_forgery(system, session)
+
+    assert [a.text for a in admit_session(session, system)] == ["only finding"]
