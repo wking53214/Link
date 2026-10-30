@@ -14,7 +14,7 @@ authors = [{ name = "William N. King" }]
 dependencies = [
     "cognitive-continuity-constitution @ git+https://github.com/wking53214/CCC@3ac6debaafec7d4437de5d4d9c0b180bdd6ea108",
     "triad42 @ git+https://github.com/wking53214/Triad-42.git@e5791c811f48a948504fd7d5aadbd89445c2076d",
-    "cns @ git+https://github.com/wking53214/CNS.git@v1.9.0",
+    "cns @ git+https://github.com/wking53214/CNS.git@v2.2.0",
 ]
 
 [project.optional-dependencies]

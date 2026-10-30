@@ -41,7 +41,7 @@ required a CNS checkout on the Python path; that is no longer so.
 
 - CCC: main, `3ac6deb`
 - Triad-42: main, `e5791c8`
-- CNS: tag `v1.9.0`, which ships `cns_composition` in the wheel.
+- CNS: tag `v2.2.0`, which ships `cns_composition` in the wheel.
 
 ## Tests
 
