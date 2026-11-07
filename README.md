@@ -98,6 +98,24 @@ not as a spine stage.
    is the evidence spine; link is not on it.)
 ```
 
+## Cross-session recurrence
+
+`link.recurrence.record_recurrence(session, ccc_system)` runs `admit_session`,
+then records each admitted FINDING in CCC's recurrence ladder
+(`record_external_finding`). Triad's 1/2/3 rule only counts inside one session;
+this lets independent sessions add up. Three differently worded sightings of the
+same problem become a PATTERN that CCC flags for human review
+(`ccc_system.recurring_groups()`). MANDATE stays human-only.
+
+- Erased and withheld findings never reach the ladder. Running a session twice
+  records nothing new.
+- The same text found again is kept as a duplicate and not counted. Sightings
+  must be worded differently to count as independent, which is CCC's rule.
+- `verified=True` is passed to CCC only to mean "real, admitted review output".
+  Records stay machine-originated inferences, not verified fact.
+- The CCC system needs a text matcher (`cccb`, in the `dev` extra) and
+  `private_source_markers` stated.
+
 ## CNS interaction and status
 
 Status: **partial**, meaning implemented against `cns` and `cns_composition`
