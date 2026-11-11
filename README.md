@@ -116,6 +116,17 @@ same problem become a PATTERN that CCC flags for human review
 - The CCC system needs a text matcher (`cccb`, in the `dev` extra) and
   `private_source_markers` stated.
 
+## Reviewer calibration
+
+`link.calibration.reviewer_calibration(ccc_system)` is a read-only ledger. For
+Triad FINDING records it reports, separately for surfaced and withheld
+candidates: how many there are, how many a later session surfaced again
+(`recurred`), how many a human promoted, and how many a human erased. A withheld
+group that recurs or is promoted as often as the surfaced group suggests the
+reviewer's withholding is losing signal. It measures the record, not the
+reviewer, and small counts mean little. Recurrence uses CCC's text matcher, so
+it only sees repeats worded similarly, and same-session repeats do not count.
+
 ## CNS interaction and status
 
 Status: **partial**, meaning implemented against `cns` and `cns_composition`
