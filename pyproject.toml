@@ -18,7 +18,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "ruff>=0.4", "cccb @ git+https://github.com/wking53214/CCCb.git@8e3c779ea8f932dd34a637bf2fcb0835cc7bc068"]
+# CCC's text matcher. Needed by link.recurrence and link.calibration, not by admit_session.
+match = ["cccb @ git+https://github.com/wking53214/CCCb.git@8e3c779ea8f932dd34a637bf2fcb0835cc7bc068"]
+dev = ["pytest>=7", "ruff>=0.4", "link[match]"]
 
 [tool.setuptools.packages.find]
 include = ["link*"]
