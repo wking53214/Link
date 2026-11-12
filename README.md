@@ -1,8 +1,10 @@
 # link
 
-link is a small Python package (one module, `link/admission.py`, 76 lines) that
+link is a small Python package (`link/admission.py` plus two optional modules,
+`link/recurrence.py` and `link/calibration.py`) that
 carries the output of a Triad-42 review session into CNS's admission door, with
-CCC holding the record in between. It exposes one function, `admit_session`.
+CCC holding the record in between. Its core function is `admit_session`; `record_recurrence` and
+`reviewer_calibration` build on it (below).
 
 It is an integration seam between three libraries. It is not one of the five
 hops of the CNS evidence spine (see "Role in STACK" below).
@@ -113,8 +115,19 @@ same problem become a PATTERN that CCC flags for human review
   must be worded differently to count as independent, which is CCC's rule.
 - `verified=True` is passed to CCC only to mean "real, admitted review output".
   Records stay machine-originated inferences, not verified fact.
-- The CCC system needs a text matcher (`cccb`, in the `dev` extra) and
+- The CCC system needs a text matcher (`cccb`, installed with `pip install ".[match]"`) and
   `private_source_markers` stated.
+
+## Reviewer calibration
+
+`link.calibration.reviewer_calibration(ccc_system)` is a read-only ledger. For
+Triad FINDING records it reports, separately for surfaced and withheld
+candidates: how many there are, how many a later session surfaced again
+(`recurred`), how many a human promoted, and how many a human erased. A withheld
+group that recurs or is promoted as often as the surfaced group suggests the
+reviewer's withholding is losing signal. It measures the record, not the
+reviewer, and small counts mean little. Recurrence uses CCC's text matcher, so
+it only sees repeats worded similarly, and same-session repeats do not count.
 
 ## CNS interaction and status
 
@@ -142,7 +155,8 @@ CNS is pinned to the tag `v3.0.0` (`pyproject.toml`), whose wheel ships
 
 ## Setup
 
-Installing link installs its three pinned dependencies; no CNS checkout on the
+Installing link installs its three pinned dependencies (`record_recurrence` and
+`reviewer_calibration` also need the `match` extra, which adds CCC's text matcher); no CNS checkout on the
 Python path is needed.
 
 ```
@@ -154,6 +168,7 @@ pip install -e ".[dev]"
 - CCC: main, `1f8e9b0` (the pin is held by `tests/test_pins.py`)
 - Triad-42: main, `eb5d395`
 - CNS: tag `v3.0.0`, commit `31cb6f5`
+- CCCb (the `match` extra only): `8e3c779`
 
 ## Tests and maturity
 
@@ -164,12 +179,13 @@ admission door, not stand-ins.
 python -m pytest -q
 ```
 
-Measured 2026-10-31 in a fresh venv installed from the pins: 21 passed, 0
-failed, 0 skipped (20 in `tests/test_admission.py`, 1 in `tests/test_pins.py`).
+Measured 2026-11-11 in a fresh venv installed from the pins: 32 passed, 0
+failed, 0 skipped (20 in `tests/test_admission.py`, 1 in `tests/test_pins.py`,
+6 in `tests/test_recurrence.py`, 5 in `tests/test_calibration.py`).
 
 Limitations:
 
-- Version 0.1.0, one function, no CLI and no service. It runs inside the
+- Version 0.1.0, three functions, no CLI and no service. It runs inside the
   caller's process against an in-memory or caller-supplied `CCCSystem`.
 - Admission is only as strong as CCC's record. Without `attestation_key` a
   record forged in the Triad's name is admitted
@@ -178,4 +194,9 @@ Limitations:
   rotate one.
 - The retry cap and refusal rules belong to `cns_composition`, and a change
   there moves link's behaviour when the CNS pin moves.
+- Recurrence counts differently worded sightings. Two sessions given the same
+  input by the same reviewer can echo each other in new words and still count as
+  independent; link has no notion of independent input.
+- `reviewer_calibration` rebuilds a matcher per finding, so it suits small
+  stores, and it sees only repeats that read as similar text.
 - No test asserts anything about this README.
