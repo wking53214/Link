@@ -25,6 +25,15 @@ from cns_composition.triad_admission import admit_candidates
 __all__ = ["admit_session"]
 
 
+def surfaced_candidates(session):
+    """The candidates the review showed, as door inputs. Anything not exactly SURFACED is left out."""
+    return [
+        TriadOutput(candidate_id=candidate.candidate_id, text=candidate.text)
+        for candidate in session.candidates.all()
+        if candidate.status is SurfacingStatus.SURFACED
+    ]
+
+
 def admit_session(session, ccc_system, guard=None, *, attestation_key=None):
     """Admit every candidate in a Triad-42 session for use inside CNS.
 
@@ -53,11 +62,7 @@ def admit_session(session, ccc_system, guard=None, *, attestation_key=None):
             "admit_session needs a ccc.CCCSystem to record and check against; "
             f"got {type(ccc_system).__name__}"
         )
-    candidates = [
-        TriadOutput(candidate_id=candidate.candidate_id, text=candidate.text)
-        for candidate in session.candidates.all()
-        if candidate.status is SurfacingStatus.SURFACED
-    ]
+    candidates = surfaced_candidates(session)
 
     def handoff():
         if attestation_key is None:
