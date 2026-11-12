@@ -129,6 +129,27 @@ reviewer's withholding is losing signal. It measures the record, not the
 reviewer, and small counts mean little. Recurrence uses CCC's text matcher, so
 it only sees repeats worded similarly, and same-session repeats do not count.
 
+## Revocation, other sources, and agent memory
+
+- **Revocation.** `link.revocation.admit_session_with_receipts` returns a receipt
+  per admitted Triad finding; `use_admitted(receipt, ccc)` re-asks CCC at the
+  moment of use and refuses an item a human has since erased, redacted, rejected
+  or superseded; `revoked(receipts, ccc)` lists what has been withdrawn. The
+  recheck is CNS's; link wires it to a real CCC system.
+- **Other sources.** `link.door.admit_items(source, items, ccc)` gives any
+  advisory source (a scanner, another model) the same discipline: everything it
+  produced is recorded in CCC under its own machine identity, only surfaced items
+  are offered, and an item is admitted only while CCC holds exactly that text.
+  This is link's own door because CNS's gate names only `triad42`; the name
+  `triad42` is refused here so no source can borrow Triad's identity. When CNS
+  takes the source as a parameter, this module should become a thin call to it.
+- **Agent memory.** `link.memory_gate.MemoryGate` stores a model's output as
+  machine-originated and UNKNOWN. `recall` returns only what CCC still holds,
+  each claim labelled with its origin; a claim is a premise only when a human
+  holds it at EVIDENCE or HISTORICAL_RECORD, and `require_premises` refuses
+  anything else. It labels and refuses; it cannot stop a model that ignores the
+  label, and a human-held status means adopted, not correct.
+
 ## CNS interaction and status
 
 Status: **partial**, meaning implemented against `cns` and `cns_composition`
@@ -179,13 +200,13 @@ admission door, not stand-ins.
 python -m pytest -q
 ```
 
-Measured 2026-11-11 in a fresh venv installed from the pins: 32 passed, 0
-failed, 0 skipped (20 in `tests/test_admission.py`, 1 in `tests/test_pins.py`,
-6 in `tests/test_recurrence.py`, 5 in `tests/test_calibration.py`).
+Measured 2026-11-12 in a fresh venv installed from the pins: 54 passed, 0
+failed, 0 skipped (20 admission, 1 pins, 6 recurrence, 5 calibration, 4 revocation,
+10 door, 8 memory gate).
 
 Limitations:
 
-- Version 0.1.0, three functions, no CLI and no service. It runs inside the
+- Version 0.1.0, six entry points, no CLI and no service. It runs inside the
   caller's process against an in-memory or caller-supplied `CCCSystem`.
 - Admission is only as strong as CCC's record. Without `attestation_key` a
   record forged in the Triad's name is admitted
