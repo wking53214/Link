@@ -277,3 +277,27 @@ def test_erased_text_from_a_new_session_under_a_new_id_is_refused_too():
 
     assert info.value.result.outcome is GateOutcome.TERMINAL_BREACH
     assert "erased" in info.value.result.reason
+
+
+def test_with_a_key_cnss_door_checks_the_stamp_itself_and_a_lookup_that_only_says_held_is_refused(monkeypatch):
+    """The key reaches CNS's door as well as CCC's lookup: a lookup that answers held but shows no stamp is refused."""
+
+    class SaysHeld:
+        def __init__(self, system, attestation_key=None):
+            pass
+
+        def status(self, source, candidate_id, text_digest):
+            return "held"
+
+        def stamps(self, source, candidate_id, text_digest):
+            return ()
+
+    monkeypatch.setattr(admission, "MachineRecords", SaysHeld)
+    with pytest.raises(UnrecordedTriadOutput) as refused:
+        admit_session(_session("only finding"), CCCSystem(), attestation_key=KEY)
+    assert "stamp" in refused.value.result.reason
+
+
+def test_with_a_key_the_real_lookup_still_admits_through_cnss_stamp_check():
+    session = _session("only finding")
+    assert [a.text for a in admit_session(session, CCCSystem(), attestation_key=KEY)] == ["only finding"]
