@@ -55,7 +55,9 @@ def admit_session(session, ccc_system, guard=None, *, attestation_key=None):
     handoff stamps each record and CCC's lookup counts only stamped ones, so a
     record anyone else wrote in the Triad's name is never admitted. A session
     that already has an unstamped record in `ccc_system` is refused with
-    ValueError. Without a key the answer is as unauthenticated as before.
+    ValueError. The key also goes to CNS's door, which checks the stamp itself
+    rather than take CCC's lookup at its word. Without a key the answer is as
+    unauthenticated as before.
     """
     if not isinstance(ccc_system, CCCSystem):
         raise TypeError(
@@ -78,4 +80,5 @@ def admit_session(session, ccc_system, guard=None, *, attestation_key=None):
         hand_off=handoff,
         lookup=MachineRecords(ccc_system, attestation_key=attestation_key),
         guard=guard if guard is not None else ResubmissionGuard(),
+        attestation_key=attestation_key,
     )
