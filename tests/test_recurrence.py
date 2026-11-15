@@ -24,7 +24,9 @@ def _session(*texts, surfaced=True):
 
 
 def _system():
-    return CCCSystem(text_matcher=TextMatcher(), private_source_markers=())
+    return CCCSystem(
+        text_matcher=TextMatcher(), private_source_markers=(), allow_unguarded_writes=True, allow_unverified_humans=True
+    )
 
 
 def test_three_independent_sessions_become_a_pattern_for_human_review():

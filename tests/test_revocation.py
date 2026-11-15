@@ -26,7 +26,7 @@ def _erase_first(session, system):
 
 
 def test_receipts_are_returned_in_session_order_and_usable():
-    session, system = _session("first", "second"), CCCSystem()
+    session, system = _session("first", "second"), CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     receipts = admit_session_with_receipts(session, system)
     assert [r.output.text for r in receipts] == ["first", "second"]
     assert [use_admitted(r, system).text for r in receipts] == ["first", "second"]
@@ -34,7 +34,7 @@ def test_receipts_are_returned_in_session_order_and_usable():
 
 
 def test_an_erasure_after_admission_stops_use_and_is_listed():
-    session, system = _session("keep", "withdraw"), CCCSystem()
+    session, system = _session("keep", "withdraw"), CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     receipts = admit_session_with_receipts(session, system)
     erased = next(a for a in system.store.artifacts.values() if a.content == "withdraw")
     system.erase(erased.artifact_id, actor=Actor.human(), reason="withdrawn", authorization_basis="test")
@@ -48,7 +48,7 @@ def test_an_erasure_after_admission_stops_use_and_is_listed():
 
 
 def test_it_works_with_an_attestation_key():
-    session, system = _session("stamped"), CCCSystem()
+    session, system = _session("stamped"), CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     receipts = admit_session_with_receipts(session, system, attestation_key=KEY)
     assert use_admitted(receipts[0], system, attestation_key=KEY).text == "stamped"
     _erase_first(session, system)
@@ -57,6 +57,6 @@ def test_it_works_with_an_attestation_key():
 
 def test_a_forged_receipt_is_not_accepted():
     with pytest.raises(TypeError):
-        revoked(["not a receipt"], CCCSystem())
+        revoked(["not a receipt"], CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
     with pytest.raises(TypeError):
-        use_admitted(object(), CCCSystem())
+        use_admitted(object(), CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))

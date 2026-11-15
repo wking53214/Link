@@ -14,7 +14,7 @@ W = SourceItem("a3", "naming is inconsistent", surfaced=False, reason="below the
 
 
 def test_surfaced_items_are_admitted_in_order_and_withheld_ones_are_recorded_but_not_offered():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     assert admit_items("scanner", [A, W, B], system) == [A, B]
     assert len(system.store.artifacts) == 3
     withheld = [a for a in system.store.artifacts.values() if a.metadata["candidate_id"] == "a3"][0]
@@ -22,7 +22,7 @@ def test_surfaced_items_are_admitted_in_order_and_withheld_ones_are_recorded_but
 
 
 def test_records_are_machine_originated_under_the_sources_own_identity():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_items("scanner", [A], system)
     (artifact,) = system.store.artifacts.values()
     assert artifact.origin == Actor.model("scanner")
@@ -30,14 +30,14 @@ def test_records_are_machine_originated_under_the_sources_own_identity():
 
 
 def test_running_again_records_nothing_twice():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_items("scanner", [A, B], system)
     admit_items("scanner", [A, B], system)
     assert len(system.store.artifacts) == 2
 
 
 def test_an_erased_item_is_refused_and_stays_refused():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_items("scanner", [A], system)
     (artifact,) = system.store.artifacts.values()
     system.erase(artifact.artifact_id, actor=Actor.human(), reason="withdrawn", authorization_basis="test")
@@ -49,7 +49,7 @@ def test_an_erased_item_is_refused_and_stays_refused():
 
 
 def test_the_same_erased_text_under_a_new_id_is_refused_too():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_items("scanner", [A], system)
     (artifact,) = system.store.artifacts.values()
     system.erase(artifact.artifact_id, actor=Actor.human(), reason="withdrawn", authorization_basis="test")
@@ -58,7 +58,7 @@ def test_the_same_erased_text_under_a_new_id_is_refused_too():
 
 
 def test_one_source_cannot_use_anothers_records():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_items("scanner", [A], system)
     other = admit_items("linter", [A], system)
     assert other == [A]
@@ -68,13 +68,13 @@ def test_one_source_cannot_use_anothers_records():
 
 def test_triad_identity_cannot_be_borrowed():
     with pytest.raises(ValueError, match="Triad"):
-        admit_items("triad42", [A], CCCSystem())
+        admit_items("triad42", [A], CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
     with pytest.raises(ValueError):
-        record_items("triad42", [A], CCCSystem())
+        record_items("triad42", [A], CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
 
 
 def test_a_record_written_by_someone_else_in_the_sources_name_is_not_admitted_with_a_key():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     system.ingest(A.text, actor=Actor.model("scanner"), epistemic_status=EpistemicStatus.UNKNOWN,
                   topics=("scanner",), reason="forged",
                   metadata={"source": "scanner", "candidate_id": "a1"})
@@ -84,7 +84,7 @@ def test_a_record_written_by_someone_else_in_the_sources_name_is_not_admitted_wi
 
 
 def test_with_a_key_the_door_stamps_and_admits():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     assert admit_items("scanner", [A, B], system, attestation_key=KEY) == [A, B]
 
 
@@ -92,6 +92,6 @@ def test_bad_input_is_refused():
     with pytest.raises(TypeError):
         admit_items("scanner", [A], object())
     with pytest.raises(ValueError):
-        admit_items("", [A], CCCSystem())
+        admit_items("", [A], CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
     with pytest.raises(ValueError):
         SourceItem("x", "withheld without a reason", surfaced=False)

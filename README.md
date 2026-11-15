@@ -186,8 +186,8 @@ pip install -e ".[dev]"
 
 ## Pinned commits
 
-- CCC: main, `1f8e9b0` (the pin is held by `tests/test_pins.py`)
-- Triad-42: main, `eb5d395`
+- CCC: main, `d133b81` (the pin is held by `tests/test_pins.py`)
+- Triad-42: main, `e908e32`
 - CNS: tag `v4.0.0`, commit `eabe6c7`
 - CCCb (the `match` extra only): `8e3c779`
 

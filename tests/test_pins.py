@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 # The CCC commit the runtime dependency installs. Moving it is a reviewed change.
-EXPECTED_CCC_PIN = "1f8e9b09820e221741588d87888dda170117c567"
+EXPECTED_CCC_PIN = "d133b812882f0849301f5803c245aa690d13ab75"
 
 
 def test_ccc_is_pinned_to_the_reviewed_commit():

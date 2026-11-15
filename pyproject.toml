@@ -12,8 +12,8 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "William N. King" }]
 # Each dependency is pinned to an exact commit, except CNS, which is pinned to its release tag, so every install gets the same code.
 dependencies = [
-    "cognitive-continuity-constitution @ git+https://github.com/wking53214/CCC@1f8e9b09820e221741588d87888dda170117c567",
-    "triad42 @ git+https://github.com/wking53214/Triad-42.git@eb5d395aaf589e51ac46586e95c95669416f1de5",
+    "cognitive-continuity-constitution @ git+https://github.com/wking53214/CCC@d133b812882f0849301f5803c245aa690d13ab75",
+    "triad42 @ git+https://github.com/wking53214/Triad-42.git@e908e32df2bf892de440bdf61043d52bf2d43a33",
     "cns @ git+https://github.com/wking53214/CNS.git@v4.0.0",
 ]
 
