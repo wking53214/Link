@@ -28,7 +28,9 @@ def _session(shown, withheld=()):
 
 
 def _system():
-    return CCCSystem(text_matcher=TextMatcher(), private_source_markers=())
+    return CCCSystem(
+        text_matcher=TextMatcher(), private_source_markers=(), allow_unguarded_writes=True, allow_unverified_humans=True
+    )
 
 
 def test_a_withheld_finding_that_a_later_session_surfaces_counts_as_recurred():

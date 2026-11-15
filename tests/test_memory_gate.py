@@ -16,7 +16,7 @@ def _human_hold(system, artifact_id, status=EpistemicStatus.EVIDENCE):
 
 
 def test_a_models_output_comes_back_advisory_with_its_origin():
-    gate = MemoryGate(CCCSystem())
+    gate = MemoryGate(CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
     gate.remember(GUESS, model_id="planner")
     (claim,) = gate.recall()
     assert claim.premise is False
@@ -25,7 +25,7 @@ def test_a_models_output_comes_back_advisory_with_its_origin():
 
 
 def test_advisory_claims_are_refused_as_premises_and_a_second_model_cannot_launder_them():
-    gate = MemoryGate(CCCSystem())
+    gate = MemoryGate(CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
     first = gate.remember(GUESS, model_id="planner")
     gate.remember(f"building on: {GUESS}", model_id="critic")
     claims = gate.recall()
@@ -36,7 +36,7 @@ def test_advisory_claims_are_refused_as_premises_and_a_second_model_cannot_laund
 
 
 def test_a_human_promotion_makes_it_a_premise():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     gate = MemoryGate(system)
     aid = gate.remember(GUESS, model_id="planner")
     _human_hold(system, aid)
@@ -46,7 +46,7 @@ def test_a_human_promotion_makes_it_a_premise():
 
 
 def test_a_machine_cannot_promote_a_claim_itself():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     gate = MemoryGate(system)
     aid = gate.remember(GUESS, model_id="planner")
     with pytest.raises(ConstitutionViolation):
@@ -55,7 +55,7 @@ def test_a_machine_cannot_promote_a_claim_itself():
 
 
 def test_an_erased_claim_is_no_longer_recalled_and_a_held_premise_is_refused_after_retraction():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     gate = MemoryGate(system)
     aid = gate.remember(GUESS, model_id="planner")
     _human_hold(system, aid)
@@ -67,7 +67,7 @@ def test_an_erased_claim_is_no_longer_recalled_and_a_held_premise_is_refused_aft
 
 
 def test_a_demoted_premise_is_refused():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     gate = MemoryGate(system)
     aid = gate.remember(GUESS, model_id="planner")
     _human_hold(system, aid)
@@ -78,7 +78,7 @@ def test_a_demoted_premise_is_refused():
 
 
 def test_topics_filter_and_rendering_carries_the_label():
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     gate = MemoryGate(system)
     a = gate.remember(GUESS, model_id="planner", topics=("perf",))
     gate.remember("unrelated", model_id="planner", topics=("docs",))

@@ -29,7 +29,7 @@ def _session(*texts: str) -> Session:
 
 def test_candidates_are_recorded_and_admitted_in_session_order():
     session = _session("first finding", "second finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
 
     admitted = admit_session(session, system)
 
@@ -41,7 +41,7 @@ def test_candidates_are_recorded_and_admitted_in_session_order():
 
 def test_running_again_admits_without_recording_twice():
     session = _session("only finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_session(session, system)
 
     admitted = admit_session(session, system)
@@ -52,7 +52,7 @@ def test_running_again_admits_without_recording_twice():
 
 def test_held_candidates_are_not_recorded_again(monkeypatch):
     session = _session("finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_session(session, system)
     calls = []
     real_hand_off = admission.hand_off
@@ -71,7 +71,7 @@ def test_held_candidates_are_not_recorded_again(monkeypatch):
 
 def test_an_unharvested_pass_is_refused_even_when_every_candidate_is_held():
     session = _session("finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_session(session, system)
     session.start_pass(LabeledItem("Started, never harvested.", Label.ASSUMPTION))
 
@@ -83,7 +83,7 @@ def test_an_unharvested_pass_is_refused_even_when_every_candidate_is_held():
 
 def test_an_erased_candidate_is_refused_and_not_brought_back():
     session = _session("withdrawn finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admitted = admit_session(session, system)
     artifact_id = session.handed_off[admitted[0].candidate_id]
     system.erase(
@@ -104,7 +104,7 @@ def test_an_erased_candidate_is_refused_and_not_brought_back():
 def test_an_unharvested_pass_blocks_the_handoff_for_new_candidates():
     session = _session("finding")
     session.start_pass(LabeledItem("Started, never harvested.", Label.ASSUMPTION))
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
 
     with pytest.raises(ValueError, match="never harvested"):
         admit_session(session, system)
@@ -141,14 +141,14 @@ def test_a_candidate_the_reviewer_was_not_shown_is_not_admitted():
     review never presented."""
     session = _session_with_hidden("shown finding", "hidden finding")
 
-    admitted = admit_session(session, CCCSystem())
+    admitted = admit_session(session, CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
 
     assert [a.text for a in admitted] == ["shown finding"]
 
 
 def test_a_hidden_candidate_is_still_recorded_in_ccc_for_the_audit_trail():
     session = _session_with_hidden("shown finding", "hidden finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
 
     admit_session(session, system)
 
@@ -162,7 +162,7 @@ def test_a_session_with_nothing_surfaced_admits_nothing_and_does_not_fail():
     rp.add_finding("hidden two", Severity.HIGH, scope="plan")
     session.harvest(rp, surfaced_ids=set())
 
-    assert admit_session(session, CCCSystem()) == []
+    assert admit_session(session, CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)) == []
 
 
 def test_admitted_candidates_keep_session_order_around_a_hidden_one():
@@ -173,7 +173,7 @@ def test_admitted_candidates_keep_session_order_around_a_hidden_one():
     third = rp.add_finding("third", Severity.HIGH, scope="plan").finding_id
     session.harvest(rp, surfaced_ids={first, third})
 
-    assert [a.text for a in admit_session(session, CCCSystem())] == ["first", "third"]
+    assert [a.text for a in admit_session(session, CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))] == ["first", "third"]
 
 
 def test_a_status_that_is_not_exactly_surfaced_is_never_admitted():
@@ -187,7 +187,7 @@ def test_a_status_that_is_not_exactly_surfaced_is_never_admitted():
     for candidate in session.candidates.all():
         candidate.status = FutureStatus.SOMETHING_NEW
 
-    assert admit_session(session, CCCSystem()) == []
+    assert admit_session(session, CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)) == []
 
 
 # ------------------------------------------------------------ a key: only the handoff's own records count
@@ -206,7 +206,7 @@ def _plant_forgery(system: CCCSystem, session: Session, *, in_this_session: bool
 
 def test_with_a_key_the_handoff_stamps_and_the_session_is_admitted():
     session = _session("only finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
 
     admitted = admit_session(session, system, attestation_key=KEY)
 
@@ -217,7 +217,7 @@ def test_with_a_key_the_handoff_stamps_and_the_session_is_admitted():
 
 def test_with_a_key_running_again_admits_without_recording_twice():
     session = _session("only finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_session(session, system, attestation_key=KEY)
 
     assert len(admit_session(session, system, attestation_key=KEY)) == 1
@@ -226,7 +226,7 @@ def test_with_a_key_running_again_admits_without_recording_twice():
 
 def test_with_a_key_a_forged_record_beside_the_session_never_counts_the_handoffs_own_stamped_one_does():
     session = _session("only finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     _plant_forgery(system, session)
 
     assert [a.text for a in admit_session(session, system, attestation_key=KEY)] == ["only finding"]
@@ -236,7 +236,7 @@ def test_with_a_key_a_forged_record_beside_the_session_never_counts_the_handoffs
 
 def test_with_a_key_a_forged_record_claiming_this_session_is_refused_and_nothing_is_recorded():
     session = _session("only finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     _plant_forgery(system, session, in_this_session=True)
 
     with pytest.raises(ValueError, match="no valid attestation"):
@@ -246,7 +246,7 @@ def test_with_a_key_a_forged_record_claiming_this_session_is_refused_and_nothing
 
 def test_with_a_key_a_session_handed_off_earlier_without_one_is_refused():
     session = _session("only finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admit_session(session, system)
 
     with pytest.raises(ValueError, match="no valid attestation"):
@@ -256,7 +256,7 @@ def test_with_a_key_a_session_handed_off_earlier_without_one_is_refused():
 def test_without_a_key_the_same_forgery_is_admitted():
     """A recorded gap, stated as an assertion: with no key a record planted in the Triad's name is held."""
     session = _session("only finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     _plant_forgery(system, session)
 
     assert [a.text for a in admit_session(session, system)] == ["only finding"]
@@ -265,7 +265,7 @@ def test_without_a_key_the_same_forgery_is_admitted():
 def test_erased_text_from_a_new_session_under_a_new_id_is_refused_too():
     """CCC-002: erasure follows the text, so a later review that produces the same words cannot bring them back."""
     first = _session("withdrawn finding")
-    system = CCCSystem()
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
     admitted = admit_session(first, system)
     system.erase(first.handed_off[admitted[0].candidate_id], actor=Actor.human(),
                  reason="withdrawn by the reviewer", authorization_basis="test")
@@ -294,10 +294,32 @@ def test_with_a_key_cnss_door_checks_the_stamp_itself_and_a_lookup_that_only_say
 
     monkeypatch.setattr(admission, "MachineRecords", SaysHeld)
     with pytest.raises(UnrecordedTriadOutput) as refused:
-        admit_session(_session("only finding"), CCCSystem(), attestation_key=KEY)
+        admit_session(_session("only finding"), CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True), attestation_key=KEY)
     assert "stamp" in refused.value.result.reason
 
 
 def test_with_a_key_the_real_lookup_still_admits_through_cnss_stamp_check():
     session = _session("only finding")
-    assert [a.text for a in admit_session(session, CCCSystem(), attestation_key=KEY)] == ["only finding"]
+    assert [a.text for a in admit_session(session, CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True), attestation_key=KEY)] == ["only finding"]
+
+
+def test_a_session_is_admitted_on_a_ccc_built_with_a_real_permission_and_verifier():
+    """Not only on a CCC that opted out: with a write permission that allows only `ingest` and a human verifier that
+    allows nothing, the handoff records the candidates and they are admitted, and CCC still refuses any other write."""
+    from ccc.errors import WritePermissionRefused
+
+    asked = []
+
+    def write_permission(request) -> bool:
+        asked.append(request.operation)
+        return request.operation == "ingest"
+
+    system = CCCSystem(write_permission=write_permission, human_verifier=lambda request: False)
+    session = _session("first finding", "second finding")
+
+    admitted = admit_session(session, system)
+
+    assert len(admitted) == 2
+    assert set(asked) == {"ingest"}
+    with pytest.raises(WritePermissionRefused):
+        system.record("a write nobody permitted", actor=Actor.model("someone"))
