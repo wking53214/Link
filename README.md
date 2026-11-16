@@ -140,9 +140,10 @@ it only sees repeats worded similarly, and same-session repeats do not count.
   advisory source (a scanner, another model) the same discipline: everything it
   produced is recorded in CCC under its own machine identity, only surfaced items
   are offered, and an item is admitted only while CCC holds exactly that text.
-  This is link's own door because CNS's gate names only `triad42`; the name
-  `triad42` is refused here so no source can borrow Triad's identity. When CNS
-  takes the source as a parameter, this module should become a thin call to it.
+  The decision is CNS's: the door calls CNS's admission door with the source
+  name (a parameter since CNS 4.1.0). The name `triad42` is refused here so no
+  source can borrow Triad's identity. A refusal is `UnrecordedOutput`, whose
+  `status` is CCC's answer and whose `__cause__` is CNS's verdict.
 - **Agent memory.** `link.memory_gate.MemoryGate` stores a model's output as
   machine-originated and UNKNOWN. `recall` returns only what CCC still holds,
   each claim labelled with its origin; a claim is a premise only when a human
@@ -200,9 +201,9 @@ admission door, not stand-ins.
 python -m pytest -q
 ```
 
-Measured 2026-11-12 in a fresh venv installed from the pins: 54 passed, 0
-failed, 0 skipped (20 admission, 1 pins, 6 recurrence, 5 calibration, 4 revocation,
-10 door, 8 memory gate).
+Measured 2026-11-16 in a fresh venv installed from the pins: 59 passed, 0
+failed, 0 skipped (23 admission, 1 pins, 6 recurrence, 5 calibration, 4 revocation,
+12 door, 8 memory gate).
 
 Limitations:
 
