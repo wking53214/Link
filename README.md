@@ -171,7 +171,7 @@ only, and absent for the rest of CNS.
   `MachineRecords` lookup (`link/admission.py:74`). The key tests
   (`tests/test_admission.py:207-264`) pass against that wiring.
 
-CNS is pinned to the tag `v4.0.0` (`pyproject.toml`), whose wheel ships
+CNS is pinned to the tag `v4.1.0` (`pyproject.toml`), whose wheel ships
 `cns_composition` beside `cns`.
 
 ## Setup
@@ -188,7 +188,7 @@ pip install -e ".[dev]"
 
 - CCC: main, `d133b81` (the pin is held by `tests/test_pins.py`)
 - Triad-42: main, `e908e32`
-- CNS: tag `v4.0.0`, commit `eabe6c7`
+- CNS: tag `v4.1.0`, commit `c84ef8c`
 - CCCb (the `match` extra only): `8e3c779`
 
 ## Tests and maturity
