@@ -95,3 +95,21 @@ def test_bad_input_is_refused():
         admit_items("", [A], CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True))
     with pytest.raises(ValueError):
         SourceItem("x", "withheld without a reason", surfaced=False)
+
+
+def test_the_decision_is_cnss_and_names_the_source():
+    system = CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True)
+    admit_items("scanner", [A], system)
+    (artifact,) = system.store.artifacts.values()
+    system.erase(artifact.artifact_id, actor=Actor.human(), reason="withdrawn", authorization_basis="test")
+    with pytest.raises(UnrecordedOutput) as info:
+        admit_items("scanner", [A], system)
+    cause = info.value.__cause__
+    assert cause.result.subject == "scanner:a1"
+    assert cause.result.outcome.value == "terminal_breach"
+
+
+def test_a_resubmission_guard_can_be_supplied():
+    from cns_composition.resubmission import ResubmissionGuard
+
+    assert admit_items("scanner", [A, B], CCCSystem(allow_unguarded_writes=True, allow_unverified_humans=True), guard=ResubmissionGuard()) == [A, B]

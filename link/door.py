@@ -7,9 +7,11 @@ in CCC under the source's own machine identity, offer only what it surfaced, and
 admit an item only while CCC still holds exactly that text. An erased, redacted,
 rejected, superseded or altered item is refused, and refusals do not reverse.
 
-This is link's own door, not CNS's. It applies CCC's record lookup directly and
-has no retry cap, because it records first and so never needs a second try. When
-CNS takes the source as a parameter, this module should become a thin call to it.
+The decision is CNS's: `admit_items` records the items, then asks CNS's admission
+door (`cns_composition.triad_admission.admit_candidates`, which takes the source
+since CNS 4.1.0) about each surfaced one. This module owns what to record and
+which items are offered, and turns CNS's refusal into `UnrecordedOutput`, which
+carries CCC's own answer as `status`.
 
 The source name is the machine identity the records carry. "triad42" is refused
 here: Triad output goes through `admit_session`, and no other source may borrow
@@ -18,12 +20,16 @@ its identity.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 
 from ccc import Actor, CCCSystem, EpistemicStatus
 from ccc.record_status import MachineRecords, attest
 from triad42.ccc_handoff import SOURCE_TAG as TRIAD_SOURCE
+
+from cns_composition.ccc_admission import TriadOutput, UnrecordedTriadOutput
+from cns_composition.ccc_admission import text_digest as _digest
+from cns_composition.resubmission import ResubmissionGuard
+from cns_composition.triad_admission import admit_candidates
 
 __all__ = ["SourceItem", "UnrecordedOutput", "admit_items", "record_items"]
 
@@ -62,10 +68,6 @@ def _checked(source: str, ccc_system) -> None:
         raise ValueError(f"{TRIAD_SOURCE!r} is Triad-42's identity; use admit_session for Triad output")
     if not isinstance(ccc_system, CCCSystem):
         raise TypeError(f"needs a ccc.CCCSystem; got {type(ccc_system).__name__}")
-
-
-def _digest(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def record_items(source, items, ccc_system, *, attestation_key=None):
@@ -109,21 +111,32 @@ def record_items(source, items, ccc_system, *, attestation_key=None):
     return recorded
 
 
-def admit_items(source, items, ccc_system, *, attestation_key=None):
-    """Record the items, then admit each surfaced one CCC still holds. Returns them in input order.
+def admit_items(source, items, ccc_system, *, attestation_key=None, guard=None):
+    """Record the items, then admit each surfaced one CNS's door lets through. Returns them in input order.
 
     Withheld items are recorded as an audit trail but never offered. Raises UnrecordedOutput on the first
-    surfaced item CCC does not hold exactly as presented.
+    surfaced item refused. `status` is CCC's answer for it (erased, altered, unattested and so on), or
+    "resubmission" when CNS's resubmission guard refused an item CCC still holds; the CNS refusal is `__cause__`.
     """
     items = list(items)
-    record_items(source, items, ccc_system, attestation_key=attestation_key)
+
+    def hand_off():
+        record_items(source, items, ccc_system, attestation_key=attestation_key)
+
+    hand_off()
     records = MachineRecords(ccc_system, attestation_key=attestation_key)
-    admitted = []
-    for item in items:
-        if not item.surfaced:
-            continue
-        status = records.status(source, item.candidate_id, _digest(item.text))
-        if status != "held":
-            raise UnrecordedOutput(item, status)
-        admitted.append(item)
-    return admitted
+    surfaced = [item for item in items if item.surfaced]
+    try:
+        admit_candidates(
+            [TriadOutput(candidate_id=i.candidate_id, text=i.text) for i in surfaced],
+            hand_off=hand_off,
+            lookup=records,
+            guard=guard if guard is not None else ResubmissionGuard(),
+            attestation_key=attestation_key,
+            source=source,
+        )
+    except UnrecordedTriadOutput as refusal:
+        refused = next(i for i in surfaced if refusal.result.subject == f"{source}:{i.candidate_id}")
+        answer = records.status(source, refused.candidate_id, _digest(refused.text))
+        raise UnrecordedOutput(refused, "resubmission" if answer == "held" else answer) from refusal
+    return surfaced
