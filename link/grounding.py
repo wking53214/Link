@@ -24,6 +24,12 @@ read but not declared is recorded as a possible dependency, which shows up as AT
 taken back and in the retraction preview. This is information-flow tracking: it sees only reads that
 go through here (not the agent's prompt, training or other tools), and it over-warns on purpose.
 
+A second witness does not depend on the agent at all: when a note's wording closely matches a stored
+claim it did not declare, that claim is recorded as a possible dependency too (the same word-overlap
+measure CCC uses for recurrence). It catches a restatement even if the claim was never read through
+here. It shares that measure's limit: heavy rewording is not noticed, and a claim already withdrawn
+cannot be compared (its text is gone).
+
 This is the dependency idea of classic truth maintenance systems, and recent work applies
 it to agent memory (for example PACMI, arXiv 2610.05732). What is specific here is that
 the roots are human-only by construction, the dependencies are declared when the note is
@@ -71,10 +77,26 @@ class GroundedClaim:
 class GroundedMemory:
     """Agent notes with declared dependencies, on a real CCC system."""
 
-    def __init__(self, ccc_system) -> None:
+    def __init__(self, ccc_system, *, flag_similar=True) -> None:
+        """`flag_similar` turns on the word-overlap default (needs the `match` extra, CCC's text matcher). It never
+        silently does nothing: if it is on and the matcher is missing, this raises ImportError."""
         if not isinstance(ccc_system, CCCSystem):
             raise TypeError(f"GroundedMemory needs a ccc.CCCSystem; got {type(ccc_system).__name__}")
         self._ccc = ccc_system
+        self._concepts = None
+        if flag_similar:
+            try:
+                from cccb.recurrence import (
+                    MINIMUM_SIGNATURE_SIZE,
+                    RECURRENCE_THRESHOLD,
+                    concept_set,
+                )
+            except ImportError as exc:
+                raise ImportError(
+                    "flag_similar needs CCC's text matcher (pip install \"link[match]\"); pass flag_similar=False "
+                    "to go without the similar-wording default"
+                ) from exc
+            self._concepts, self._bar, self._min_size = concept_set, RECURRENCE_THRESHOLD, MINIMUM_SIGNATURE_SIZE
 
     # -- reading the record ------------------------------------------------------------
     def _artifact(self, artifact_id):
@@ -97,9 +119,32 @@ class GroundedMemory:
         return tuple(e.target_id for e in self._ccc.lineage.related(artifact_id, RelationshipType.RELATED_TO)
                      if e.source_id == artifact_id and e.reason.startswith(_POSSIBLE))
 
-    def _record_possible(self, artifact_id, read_id, model_id):
-        self._ccc.relate(artifact_id, read_id, RelationshipType.RELATED_TO, actor=Actor.model(model_id),
-                         reason=f"{_POSSIBLE}: {model_id} had read {read_id}")
+    def _record_possible(self, artifact_id, target_id, model_id, why="had read"):
+        if target_id in self._soft_supports(artifact_id):
+            return  # one possible dependency per claim, whichever witness saw it first
+        self._ccc.relate(artifact_id, target_id, RelationshipType.RELATED_TO, actor=Actor.model(model_id),
+                         reason=f"{_POSSIBLE}: {model_id} {why} {target_id}")
+
+    def possible_dependencies(self, artifact_id):
+        """(claim id, why) for everything this note may have depended on without declaring it."""
+        return tuple((e.target_id, e.reason.split(": ", 1)[-1]) for e in
+                     self._ccc.lineage.related(artifact_id, RelationshipType.RELATED_TO)
+                     if e.source_id == artifact_id and e.reason.startswith(_POSSIBLE))
+
+    def _flag_similar(self, artifact_id, text, model_id, declared):
+        mine = self._concepts(text)
+        if len(mine) < self._min_size:
+            return
+        for other in self._ccc.store.artifacts.values():
+            if (other.artifact_id == artifact_id or other.artifact_id in declared or not other.available
+                    or self._retracted(other.artifact_id)):
+                continue
+            theirs = self._concepts(other.content)
+            if len(theirs) < self._min_size:
+                continue
+            score = len(mine & theirs) / len(mine | theirs)
+            if score >= self._bar:
+                self._record_possible(artifact_id, other.artifact_id, model_id, why=f"wrote similar wording ({score:.2f}) to")
 
     def _is_root(self, artifact_id):
         a = self._artifact(artifact_id)
@@ -125,6 +170,8 @@ class GroundedMemory:
         for support in supports:
             self._ccc.relate(artifact.artifact_id, support, RelationshipType.DERIVED_FROM, actor=actor,
                              reason=f"{model_id} declares this note stands on {support}")
+        if self._concepts is not None:
+            self._flag_similar(artifact.artifact_id, text, model_id, set(supports))
         return artifact.artifact_id
 
     def agent(self, model_id):
