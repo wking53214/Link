@@ -47,8 +47,9 @@ and erasure reaching downstream copies ([Gravitee](https://www.gravitee.io/corpu
 
 ## What is still unproven or limited
 
-- **Only tiny tests.** Everything ran on small hand-made cases. It has never seen a
-  real stream of reviews or a real agent loop.
+- **Mostly tiny tests.** Almost everything ran on small hand-made cases. The one
+  real-data check is described below. Receipts, revocation, grounded memory and the
+  read log have never seen real data or a real agent loop.
 - **"Same problem" means "shares at least half its significant words".** This is
   the biggest limit, and a made-up billing-service run measured it. Three natural
   rewordings of one problem ("retried indefinitely", "no upper limit", "no cap on
@@ -70,6 +71,26 @@ and erasure reaching downstream copies ([Gravitee](https://www.gravitee.io/corpu
   refuses; it does not judge truth. "A person adopted it" does not mean "it is correct".
 - **One small stretch:** a review finding is handed to CCC marked "verified" only to
   mean "real, non-empty output that passed admission", not "true".
+
+## Real-data check (2026-11-18)
+
+Real duplicate bug reports (GitBugs) stand in for repeated findings. They are not AI
+reviews, and the sample is small (28 clusters from Spark and Cassandra).
+
+- The shipped matcher links only 11.8% of real duplicate pairs (typical word overlap
+  0.07 against the 0.5 bar).
+- Through the real `record_recurrence`, 3 of 28 clusters linked 2 or more reports into a
+  pattern, and none reached the human-review flag.
+- A character n-gram matcher ranks duplicates better (AUC 0.91 against 0.72). At a
+  strict setting it changes little end to end (4 of 28 linked). At a loose setting it
+  links 10 of 28 and flags 2, but unrelated reports start joining groups.
+- Adding the report body made the shipped matcher worse (1 of 28).
+- GloVe word vectors did not help. No sentence-embedding model was tested.
+- The prior-art search stayed small, and arXiv papers were read only through search
+  summaries.
+
+So the repeat-counting works when findings share most of their words and rarely
+otherwise. Treat the recurrence ladder as unproven on real wording.
 
 ## Questions worth answering before calling it novel
 
