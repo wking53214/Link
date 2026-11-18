@@ -151,6 +151,21 @@ it only sees repeats worded similarly, and same-session repeats do not count.
   anything else. It labels and refuses; it cannot stop a model that ignores the
   label, and a human-held status means adopted, not correct.
 
+## Grounded memory
+
+`link.grounding.GroundedMemory` goes one step past `MemoryGate`. A model's note says what it
+was built on when it is written (`note(text, model_id=..., supports=[...])`), and a note can
+only be built on something that still stands. Each note is GROUNDED (every note under it ends in a
+claim a person still holds), FLOATING (something under it is a machine note no person is behind),
+or ORPHANED (something under it was erased, redacted, rejected or superseded). Only a person can
+make a root, so a machine cannot ground its own notes. `impact(claim_id)` shows a person every note
+whose state would change if they retracted that claim, before they do it, and writes nothing.
+`require_grounded` re-checks the record and refuses anything not GROUNDED now.
+
+The dependency idea is classic truth maintenance, and recent papers apply it to agent memory (for
+example PACMI, arXiv 2610.05732). What is specific here is the human-only roots, dependencies checked
+when the note is written, and the retraction preview. It does not judge whether a root is true.
+
 ## CNS interaction and status
 
 Status: **partial**, meaning implemented against `cns` and `cns_composition`
