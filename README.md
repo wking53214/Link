@@ -174,6 +174,13 @@ makes a note grounded, but once the claim is withdrawn the note is AT_RISK (not 
 retraction preview) instead of silently unaffected. This is information-flow tracking. It sees only reads that go
 through here, not the agent's prompt, training or other tools, and it over-warns on purpose.
 
+A second witness does not depend on the agent at all: when a note's wording closely matches a stored claim it did
+not declare, that claim is also recorded as a possible dependency (`possible_dependencies(note_id)` lists them and
+why), using the same word-overlap measure CCC uses for recurrence. It catches a restatement even if the claim was
+never read through Link. It needs the `match` extra (it raises `ImportError` rather than silently doing nothing;
+pass `flag_similar=False` to go without), and it has that measure's limits: heavy rewording is not noticed, and a
+claim already withdrawn cannot be compared because its text is gone.
+
 ## CNS interaction and status
 
 Status: **partial**, meaning implemented against `cns` and `cns_composition`
