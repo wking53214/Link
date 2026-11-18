@@ -166,6 +166,21 @@ The dependency idea is classic truth maintenance, and recent papers apply it to 
 example PACMI, arXiv 2610.05732). What is specific here is the human-only roots, dependencies checked
 when the note is written, and the retraction preview. It does not judge whether a root is true.
 
+A note's list of what it stands on is written by the agent, so it can be left out or false. `memory.agent(name)`
+returns an `AgentView` that adds an independent witness: it logs what the agent actually read, requires
+`supports` to be given (an empty tuple is the honest "I stand on nothing"), refuses support from anything the agent
+never read, and records what it read but did not declare as a possible dependency. A possible dependency never
+makes a note grounded, but once the claim is withdrawn the note is AT_RISK (not trusted as grounded, shown in the
+retraction preview) instead of silently unaffected. This is information-flow tracking. It sees only reads that go
+through here, not the agent's prompt, training or other tools, and it over-warns on purpose.
+
+A second witness does not depend on the agent at all: when a note's wording closely matches a stored claim it did
+not declare, that claim is also recorded as a possible dependency (`possible_dependencies(note_id)` lists them and
+why), using the same word-overlap measure CCC uses for recurrence. It catches a restatement even if the claim was
+never read through Link. It needs the `match` extra (it raises `ImportError` rather than silently doing nothing;
+pass `flag_similar=False` to go without), and it has that measure's limits: heavy rewording is not noticed, and a
+claim already withdrawn cannot be compared because its text is gone.
+
 ## CNS interaction and status
 
 Status: **partial**, meaning implemented against `cns` and `cns_composition`
