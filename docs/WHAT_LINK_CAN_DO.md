@@ -49,9 +49,17 @@ and erasure reaching downstream copies ([Gravitee](https://www.gravitee.io/corpu
 
 - **Only tiny tests.** Everything ran on small hand-made cases. It has never seen a
   real stream of reviews or a real agent loop.
-- **"Same problem" means "worded differently, similar vocabulary".** Identical text
-  is counted as an echo, not a new sighting. Two reviews fed the same input by the
-  same reviewer could still look independent.
+- **"Same problem" means "shares at least half its significant words".** This is
+  the biggest limit, and a made-up billing-service run measured it. Three natural
+  rewordings of one problem ("retried indefinitely", "no upper limit", "no cap on
+  retries") scored 0.12 to 0.19 against the 0.5 bar, so they were **not** linked: three
+  groups of one, no pattern. The matcher also treats "retries", "retried" and "retry"
+  as different words. When the reviews kept most of the same words they scored 0.54 to
+  0.58 and linked into one flagged pattern. A reviewer that rephrases a lot will never
+  trigger it. The matcher's own notes say this is deliberate (a false link is worse
+  than a missed one). Fixing it needs a meaning-aware step in CCC or CCCb, not in Link.
+- **Echoes and independence.** Identical text counts as an echo, not a new sighting.
+  Two reviews fed the same input by the same reviewer could still look independent.
 - **Taking it back stops use, it does not delete copies.** A consumer that already
   copied the text keeps the copy. Some privacy rules call that not erasure.
 - **The reviewer scorecard is slow on big stores** and only sees repeats that read
@@ -70,3 +78,5 @@ and erasure reaching downstream copies ([Gravitee](https://www.gravitee.io/corpu
    independent, or does the same reviewer echo itself?
 3. Does a person retracting a finding reach the places that really use it, or only
    the ones wired through Link?
+4. How much do real reviews reuse each other's key words? If it is rarely half, the
+   repeat counting needs a meaning-aware matcher before it is worth relying on.
