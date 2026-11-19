@@ -17,8 +17,12 @@ hops of the CNS evidence spine (see "Role in STACK" below).
   applies it to CCC's record. Items CCC does not hold are refused; while CCC is
   still recording one, the gate asks for a retry.
 
-None of the three libraries imports the others. link is the one place that
-does, so the rules for each library stay with that library.
+None of the three libraries needs another to install or run, and link is the
+one place that uses all three together. They are not import-free of each other:
+Triad-42's handoff module (`triad42/ccc_handoff.py`, its optional `ccc` extra)
+imports CCC, and link calls that module; Triad-42 and CCC each also carry an
+optional CNS connector that loads `cns.gate` on demand (INSPECTED 2026-11-17 at
+the pins below). CNS's packages import neither of the other two.
 
 ## What it does
 
@@ -51,8 +55,9 @@ never holds or defaults a key.
 ## Role in STACK
 
 **What link is.** The glue that the other libraries deliberately do not
-contain. It was written to be the single importer of Triad-42, CCC and
-`cns_composition`, so none of those depends on another.
+contain. It is the only package that imports Triad-42, CCC and
+`cns_composition` together, so none of those has to depend on another to be
+installed (the optional imports between them are listed at the top).
 
 **Inputs and outputs.**
 
@@ -66,6 +71,8 @@ contain. It was written to be the single importer of Triad-42, CCC and
 exactly SURFACED), the ordering (hand off first, admit in session order), and the
 wiring of the three libraries.
 
+**Authority matrix.** Mostly wiring, with a few rules of its own. The admission decision and the record belong to `cns_composition` and CCC. link's own rules are the ones under "Owns" above, plus two more: the door refuses the source name `triad42`, and `MemoryGate.require_premises` accepts a claim as a premise only when a human holds it at EVIDENCE or HISTORICAL_RECORD. It enforces at its own exits only, by raising (`UnrecordedTriadOutput`, `UnrecordedOutput`, `LaunderingRefused`, `TypeError`, `ValueError`); nothing stops a caller that ignores the exception. `reviewer_calibration` evaluates the record by counting, read-only. link authenticates no one: an `attestation_key` is the caller's, and link passes it to Triad-42's handoff, CCC's lookup and CNS's door. It issues no permission and writes no evidence of its own beyond the records it asks CCC to hold; receipts are CNS's. **Fail behavior.** Closed: an item CCC does not hold is refused, and the retry cap belongs to the gate. Without `attestation_key` a record forged in the Triad's name is admitted (stated under Limitations).
+
 **Does not own.** Whether a candidate is true or any good (Triad-42's review is
 advisory and link does not judge it). What CCC holds, who originated it, and
 erasure (CCC). The gate, its outcomes and the retry cap (`cns_composition`, on
@@ -76,7 +83,9 @@ it. Receivers apply their own policy.
 **Relationship to the evidence spine.** The CNS evidence spine runs one document
 through HERALD, TIE, Conservation_Kernel, Governance_Gateway and CCC. Link is
 not a hop in that chain. It imports none of HERALD, TIE, Conservation_Kernel or
-Governance_Gateway, and it does not call CCCb. Its only contact with the spine
+Governance_Gateway. `admit_session` does not use CCCb; the optional `match`
+extra does (`link/calibration.py` builds CCCb's `TextMatcher`, and
+`record_recurrence` needs a CCC system that has one). Its only contact with the spine
 is CCC, which it shares as the record: link writes Triad-42 candidates into a
 CCC system and reads them back, which is a separate flow from the spine's
 ingest. CNS's own link ledger lists Link as a repository with a two-way
@@ -188,7 +197,7 @@ only, and absent for the rest of CNS.
 
 - Implemented: link imports and calls the composition admission door.
   `link/admission.py:21-23` imports `TriadOutput`, `ResubmissionGuard` and
-  `admit_candidates` from `cns_composition`; `link/admission.py:71-76` calls
+  `admit_candidates` from `cns_composition`; `link/admission.py:78-84` calls
   `admit_candidates`, which builds the CNS gate and returns on PASS, hands off
   again on RETRY and raises on anything else. `tests/test_admission.py:11-13`
   imports `cns.gate.GateOutcome` and the composition gate name and exception,
@@ -197,10 +206,13 @@ only, and absent for the rest of CNS.
   receive UAI-1 signed messages, uses no envelope, identity, grant or ledger
   from `cns_interop`, and does not use the CNS evidence-spine chain
   (`chains/evidence_spine.py`).
-- link does not forward `attestation_key` to the gate itself
-  (`link/admission.py:71-76`); the key reaches the check through the
-  `MachineRecords` lookup (`link/admission.py:74`). The key tests
-  (`tests/test_admission.py:207-264`) pass against that wiring.
+- Since 2026-11-15 link passes `attestation_key` to CNS's door as well as to
+  the `MachineRecords` lookup (`link/admission.py:78-84`), and the door checks
+  the stamp itself, so a lookup that only answers "held" is refused
+  (`test_with_a_key_cnss_door_checks_the_stamp_itself_and_a_lookup_that_only_says_held_is_refused`).
+  An earlier version of this bullet said the key was not forwarded; that was
+  true before commit `520d20d`. The key tests are the `test_with_a_key_*` and
+  `test_without_a_key_*` cases in `tests/test_admission.py`.
 
 CNS is pinned to the tag `v4.1.0` (`pyproject.toml`), whose wheel ships
 `cns_composition` beside `cns`.
@@ -234,6 +246,10 @@ python -m pytest -q
 Measured 2026-11-16 in a fresh venv installed from the pins: 59 passed, 0
 failed, 0 skipped (23 admission, 1 pins, 6 recurrence, 5 calibration, 4 revocation,
 12 door, 8 memory gate).
+
+EXECUTED 2026-11-17 at `be4aa33`, Python 3.13, in fresh environments installed from the pins: 59 passed, 0 failed, 0 skipped, both with `pip install ".[dev]"` (the way CI installs) and with the editable line under "Setup". The per-file figures above match. The same 59 pass with CCC and CCCb moved to their mains (`2379de8`, `5d27a12`), so the CCC guard change no longer breaks this suite. At the earlier commit `18ded80` the suite gives 57 (EXECUTED the same day): three admission tests were added on 2026-11-15, after the 54 measured on 2026-11-12, and two door tests on 2026-11-16. Not run: GitHub CI, Python 3.11 and 3.12 (CI's versions). `ruff check .` reports 7 findings with ruff 0.17.5; lint is not part of CI here.
+
+EXECUTED 2026-11-19 at `062dbd2`, Python 3.13, a fresh environment installed from the pins with `pip install ".[dev]"`: 92 passed, 0 failed, 0 skipped. The 33 tests added since `be4aa33` are 13 grounding, 10 agent view and 10 similar wording; the other files are as above. The pins listed above did not change. Not run: CI.
 
 Limitations:
 
