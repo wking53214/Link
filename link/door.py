@@ -1,7 +1,7 @@
 """A front door for advisory output from any source, not only Triad-42 (link).
 
-CNS's admission gate names one source, "triad42", so it cannot admit output from
-anything else. This door gives other advisory sources (a scanner, another model,
+The Triad-42 door (`admit_session`) admits only Triad output, under the identity
+"triad42". This door gives other advisory sources (a scanner, another model,
 a human-run reviewer) the same discipline: record everything the source produced
 in CCC under the source's own machine identity, offer only what it surfaced, and
 admit an item only while CCC still holds exactly that text. An erased, redacted,
